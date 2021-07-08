@@ -8,7 +8,7 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 debug = DebugToolbarExtension(app)
 
-responses = []
+# responses = []
 
 @app.route('/')
 def homepage():
@@ -16,6 +16,8 @@ def homepage():
 
     title = survey.title
     instructions = survey.instructions
+    session["responses"] = []
+    session["q_id"] = 0
 
     return render_template('survey_start.html', 
         title=title, # passing parameter by name, not assignment
@@ -25,11 +27,21 @@ def homepage():
 def begin():
     """Start button: Redirects user to questions"""
 
-    return redirect('/question/0')
+    return redirect(f'/question/{session["q_id"]}')
 
 @app.route('/question/<int:q_id>')
 def question_page(q_id):
     """Questions page: Displays current question and choices"""
+
+
+
+    if (session["q_id"] == len(survey.questions)):
+        flash("hey you're already done")
+        return redirect("/complete")
+
+    elif (q_id != session["q_id"]):
+        flash("pleaes stay on your current question")
+        return redirect(f'/question/{session["q_id"]}')
 
     question = survey.questions[q_id]
     return render_template('question.html', 
@@ -42,12 +54,21 @@ def answer(q_id):
         If no more questions, renders the completion page.
     """
 
-    responses.append(request.form['answer'])
+    response = request.form['answer']
+
+    responses = session["responses"]
+    responses.append(response)
+    session["responses"] = responses
+
     next_q = q_id + 1
+    session["q_id"] = next_q
 
     if next_q == len(survey.questions):
-        return render_template('completion.html')
+        return redirect('/complete')
 
     return redirect(f"/question/{next_q}")
     
+@app.route('/complete')
+def complete():
+    return render_template("completion.html")
 
