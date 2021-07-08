@@ -12,8 +12,7 @@ responses = []
 
 @app.route('/')
 def homepage():
-    """Landing page renders the title and instruction for survey.
-    """
+    """Landing page: Renders the title and instruction for the survey."""
 
     title = survey.title
     instructions = survey.instructions
@@ -24,13 +23,13 @@ def homepage():
 
 @app.route('/begin', methods=["POST"])
 def begin():
-    """Start button redirects to questions"""
+    """Start button: Redirects user to questions"""
 
     return redirect('/question/0')
 
 @app.route('/question/<int:q_id>')
 def question_page(q_id):
-    """Questions page displays question and choices"""
+    """Questions page: Displays current question and choices"""
 
     question = survey.questions[q_id]
     return render_template('question.html', 
@@ -39,9 +38,8 @@ def question_page(q_id):
 
 @app.route('/answer/<int:q_id>', methods=["POST"])
 def answer(q_id):
-    """appends user answer to responses list
-        take user to next question
-        if no more questions, render completion page
+    """Answer page: Appends user answer to responses list and take user to the next question.
+        If no more questions, renders the completion page.
     """
 
     responses.append(request.form['answer'])
