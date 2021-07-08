@@ -14,34 +14,28 @@ debug = DebugToolbarExtension(app)
 def homepage():
     """Landing page: Renders the title and instruction for the survey."""
 
-    title = survey.title
-    instructions = survey.instructions
     session["responses"] = []
-    session["q_id"] = 0
 
-    return render_template('survey_start.html', 
-        title=title, # passing parameter by name, not assignment
-        instructions=instructions)
+    return render_template('survey_start.html', survey=survey)
 
 @app.route('/begin', methods=["POST"])
 def begin():
     """Start button: Redirects user to questions"""
 
-    return redirect(f'/question/{session["q_id"]}')
+    return redirect(f'/question/{len(session["responses"])}')
 
 @app.route('/question/<int:q_id>')
 def question_page(q_id):
-    """Questions page: Displays current question and choices"""
+    """Questions page: Displays current question and choices. Forces user to stay on 
+       correct page."""
 
-
-
-    if (session["q_id"] == len(survey.questions)):
+    if (len(session["responses"]) == len(survey.questions)):
         flash("hey you're already done")
         return redirect("/complete")
 
-    elif (q_id != session["q_id"]):
-        flash("pleaes stay on your current question")
-        return redirect(f'/question/{session["q_id"]}')
+    elif (q_id != len(session["responses"])):
+        flash("please stay on your current question")
+        return redirect(f'/question/{len(session["responses"])}')
 
     question = survey.questions[q_id]
     return render_template('question.html', 
@@ -50,8 +44,8 @@ def question_page(q_id):
 
 @app.route('/answer/<int:q_id>', methods=["POST"])
 def answer(q_id):
-    """Answer page: Appends user answer to responses list and take user to the next question.
-        If no more questions, renders the completion page.
+    """Answer page: Appends user answer to responses list and takes user to the next question.
+       If no more questions, renders the completion page.
     """
 
     response = request.form['answer']
@@ -61,7 +55,6 @@ def answer(q_id):
     session["responses"] = responses
 
     next_q = q_id + 1
-    session["q_id"] = next_q
 
     if next_q == len(survey.questions):
         return redirect('/complete')
@@ -70,5 +63,7 @@ def answer(q_id):
     
 @app.route('/complete')
 def complete():
+    """Render completion page"""
+
     return render_template("completion.html")
 
