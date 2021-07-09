@@ -1,6 +1,6 @@
 from flask import Flask, request, render_template, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
-from surveys import satisfaction_survey as survey
+from surveys import surveys
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "never-tell!"
@@ -8,13 +8,28 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 debug = DebugToolbarExtension(app)
 
-# responses = []
+CURRENT_SURVEY = 'selected_survey'
+CURRENT_RESPONSES = 'current_responses'
+
+# surveys = {
+#     "satisfaction": satisfaction_survey,
+#     "personality": personality_quiz,
+# }
 
 @app.route('/')
-def homepage():
-    """Landing page: Renders the title and instruction for the survey."""
+def show_survey_choices():
+    """Landing page where user can pick a survey."""
 
-    session["responses"] = []
+    return render_template("survey_choices.html", surveys=surveys)
+
+@app.route('/', methods=["POST"])
+def selected_survey():
+    """Renders the selected survey's title and instructions."""
+
+    selected = request.form["selected_survey"]
+    survey = surveys[selected]
+    
+    session[CURRENT_SURVEY] = selected
 
     return render_template('survey_start.html', survey=survey)
 
@@ -22,20 +37,26 @@ def homepage():
 def begin():
     """Start button: Redirects user to questions"""
 
-    return redirect(f'/question/{len(session["responses"])}')
+    session[CURRENT_RESPONSES] = []
+
+    return redirect(f'/question/{len(session[CURRENT_RESPONSES])}')
 
 @app.route('/question/<int:q_id>')
 def question_page(q_id):
     """Questions page: Displays current question and choices. Forces user to stay on 
        correct page."""
 
-    if (len(session["responses"]) == len(survey.questions)):
+    responses = session.get(CURRENT_RESPONSES)
+    selected = session[CURRENT_SURVEY]
+    survey = surveys[selected]
+
+    if (len(responses) == len(survey.questions)):
         flash("hey you're already done")
         return redirect("/complete")
 
-    elif (q_id != len(session["responses"])):
+    elif (q_id != len(responses)):
         flash("please stay on your current question")
-        return redirect(f'/question/{len(session["responses"])}')
+        return redirect(f'/question/{len(responses)}')
 
     question = survey.questions[q_id]
     return render_template('question.html', 
@@ -48,11 +69,13 @@ def answer(q_id):
        If no more questions, renders the completion page.
     """
 
-    response = request.form['answer']
+    answer = request.form['answer']
+    selected = session[CURRENT_SURVEY]
+    survey = surveys[selected]
 
-    responses = session["responses"]
-    responses.append(response)
-    session["responses"] = responses
+    responses = session[CURRENT_RESPONSES]
+    responses.append(answer)
+    session[CURRENT_RESPONSES] = responses
 
     next_q = q_id + 1
 

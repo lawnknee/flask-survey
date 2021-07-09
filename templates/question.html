@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
+{% block title %} Survey Questions {% endblock %}
+
 {% block content %}
 
   <h1>{{ question.question }}</h1>
-
-
 
   <form action="/answer/{{ q_id }}" method="POST">
     {% for choice in question.choices %}
